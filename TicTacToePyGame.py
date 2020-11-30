@@ -15,8 +15,6 @@ WIDTH_WINDOW = 310
 HEIGHT_CELL = 90
 WIDTH_CELL = 90
 MERGE = 10
-FPS = 60
-fpsClock = pygame.time.Clock()
 
 
 class Cell:
@@ -82,7 +80,7 @@ class Field:
                 elif field[i + j + i * 2] == 'O':
                     self.draw_circle_cell(j, i)
                 else:
-                    print('это не возможно')
+                    print(f'Field {field} is not draw')
                     pygame.quit()  # Роняем приложение
 
     def print_text(self, text, x, y, height=30, color=RED):
@@ -90,59 +88,69 @@ class Field:
         text_surface = font.render(text, True, color)
         self.gameScreen.blit(text_surface, dest=(x, y))
 
-    def start_screen(self):
+    def choice_figure_draw(self):
         self.print_text('Choice figure:', 60, 40, color=BLUE)
         self.draw_circle_cell(1, 0)
         self.draw_cross_cell(1, 2)
         self.print_text('or', 130, 110, color=GREEN, height=50)
-        pygame.display.update()
+
+    def choice_figure(self):
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if is_cursor_in_cell(1, 0):
                     self.display_clear()
-                    return 'O', False
+                    pygame.display.update()
+                    return 'O', False, True  # Figure, choice_flag, who_flag
                 elif is_cursor_in_cell(1, 2):
                     self.display_clear()
-                    return 'X', False
-        return '', True
+                    pygame.display.update()
+                    return 'X', False, True
+        return '', True, False
 
-    def who_start_first(self):
+    def who_start_first_draw(self):
         self.print_text('Who start first?', 40, 30, color=WHITE)
         self.draw_text_cell(1, 0, 'Man', x=25, y=130)
         self.draw_text_cell(1, 2, 'Comp', x=220)  # Проверить
         self.print_text('or', 130, 110, height=50, color=BLUE)
-        pygame.display.update()
+
+    def who_start_first(self):
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if is_cursor_in_cell(1, 0):
                     self.display_clear()
-                    return 'man', False, False
+                    return 'human', False, True
                 elif is_cursor_in_cell(1, 2):
                     self.display_clear()
-                    return 'computer', False, False
-        return '', True, True
+                    return 'computer', False, True
+        return '', True, False
 
-    def end_game(self, win, li):
+    def end_game_draw(self, win):
         self.print_text(f'Winn {win}', 50, 30)
         self.print_text('Do you want', 70, 80)
         self.print_text('play again?', 80, 110)
         self.draw_text_cell(2, 1, 'Yes', x=130, y=230)  # Проверить
-        pygame.display.update()
+
+    def end_game(self, li):
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if is_cursor_in_cell(2, 1):
                     self.display_clear()
-                    return True, True, False, True, True, [" " for x in range(9)]  # Сделать функцию "Поднять флаги"
-        return False, False, True, False, False, li
+                    return False, True, [" " for x in range(9)]
+        return True, False, li
 
     def winner(self, board, figure, gamer):
         if tictactoe.is_win(board, figure):
             self.display_clear()
-            return gamer, True
+            return gamer, False, True
         if ' ' not in board:
             self.display_clear()
-            return 'friendship', True
-        return '', False
+            return 'friendship', False, True
+        return '', True, False
+
+
+def change_player(player):
+    player = 'human' if player == 'computer' else 'computer'
+    return player
 
 
 if __name__ == '__main__':
@@ -151,36 +159,44 @@ if __name__ == '__main__':
     figure = ''
     gamer = ''
     win = ''
-    start_menu = True  # флаг выхода из стартового меню
-    choice_figure = True  # флаг выхода из меню выбора фигур
-    choice_who_start = True  # флаг выхода из меню выбора кто начинает
-    main_game = True
+    figure_flag = True  # флаг выхода из меню выбора фигур
+    who_start_flag = False  # флаг выхода из меню выбора кто начинает
+    main_game_flag = False
     end_game_flag = False
     # Цикл игры
-    runGame = True  # флаг выхода из цикла игры
-
+    run_game_flag = True  # флаг выхода из цикла игры
     game = Field()
+    while run_game_flag:
+        # Draws
+        if figure_flag:
+            game.choice_figure_draw()
+        if who_start_flag:
+            game.who_start_first_draw()
+        if main_game_flag:
+            game.draw_playing_field(board)
+            if gamer == 'computer':
+                num_move = tictactoe.is_can_win(board, figure)
+                board[num_move] = figure
+                win, main_game_flag, end_game_flag = game.winner(board, figure, gamer)
+                figure = tictactoe.change_player(figure)
+                gamer = 'human'
 
-    while runGame:
-        fpsClock.tick(FPS)
-        # Отслеживание события: "закрыть окно"
+        if end_game_flag:
+            game.end_game_draw(win)
+        # Events
         for event in pygame.event.get():
-
-            if event.type == pygame.QUIT: runGame = False
-
-            if start_menu:
-                if choice_figure:
-                    figure, choice_figure = game.start_screen()
-                elif choice_who_start:
-                    gamer, choice_who_start, start_menu = game.who_start_first()
-                    if gamer == 'computer':
-                        figure = tictactoe.change_player(figure)
-                else:
-                    continue
-            elif main_game:
-                game.draw_playing_field(board)
-
-                if gamer == 'man':
+            if event.type == pygame.QUIT:
+                run_game_flag = False
+            if figure_flag:
+                figure, figure_flag, who_start_flag = game.choice_figure()
+                continue
+            if who_start_flag:
+                gamer, who_start_flag, main_game_flag = game.who_start_first()
+                if gamer == 'computer':
+                    figure = tictactoe.change_player(figure)
+                continue
+            if main_game_flag:
+                if gamer == 'human':
                     if event.type == pygame.MOUSEBUTTONUP:
                         if event.button == 1:
                             x, y = pygame.mouse.get_pos()
@@ -188,18 +204,11 @@ if __name__ == '__main__':
                             col = (y - MERGE) // (MERGE + WIDTH_CELL)
                             if tictactoe.is_empty(board, row + col + row * 2):
                                 board[row + col + row * 2] = figure
-                                win, end_game_flag = game.winner(board, figure, gamer)
+                                win, main_game_flag, end_game_flag = game.winner(board, figure, gamer)
                                 figure = tictactoe.change_player(figure)
                                 gamer = 'computer'
-                elif gamer == 'computer':
-                    num_move = tictactoe.is_can_win(board, figure)
-                    board[num_move] = figure
-                    win, end_game_flag = game.winner(board, figure, gamer)
-                    figure = tictactoe.change_player(figure)
-                    gamer = 'man'
             if end_game_flag:
-                start_menu, main_game, end_game_flag, choice_figure, choice_who_start, board = game.end_game(win, board)
+                end_game_flag, figure_flag, board = game.end_game(board)
         pygame.display.update()
-
     # Выход из игры:
     pygame.quit()

@@ -1,5 +1,4 @@
 import random
-import time
 import os
 
 
@@ -61,13 +60,9 @@ def who_starts():
         else:
             order = ['X', figure]
     print('Начинает', end='')
-    #time.sleep(0.5)
     print('.', end='')
-    #time.sleep(0.5)
     print('.', end='')
-    #time.sleep(0.5)
     print('.', end='')
-    #time.sleep(0.5)
     print(gamer)
     return order, gamer
 
@@ -125,7 +120,7 @@ def is_can_win(li: list, letter: str):
     for i in '1 3 5 7'.split():
         if li[int(i)] == ' ':
             return int(i)
-    print('WTF')
+    print(f'{letter} is not argument')
     return 0
 
 
