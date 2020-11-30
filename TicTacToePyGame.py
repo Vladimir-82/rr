@@ -216,6 +216,7 @@ if __name__ == '__main__':
                                 win, main_game_flag, end_game_flag = game.winner(board, figure, gamer)
                                 figure = tictactoe.change_player(figure)
                                 gamer = 'computer'
+                                continue
             if end_game_flag:
                 end_game_flag, figure_flag, board = game.end_game(board)
         pygame.display.update()
